@@ -4,11 +4,11 @@ class MinMaxAntSystem {
         this.params = params || {
             numAnts: 10,              // Number of ants
             maxIterations: 100,      // Maximum iterations
-            alpha: 1.0,              // Influence of pheromone
-            beta: 2.0,               // Influence of distance
-            rho: 0.1,                // Pheromone evaporation rate
+            alpha: 8.0,              // Influence of pheromone
+            beta: 1.0,               // Influence of distance
+            rho: 0.01,                // Pheromone evaporation rate
             q0: 0.9,                 // Threshold for selecting the best next node
-            minPheromone: 0.01,      // Minimum pheromone level
+            minPheromone: 0.35,      // Minimum pheromone level
         };
         this.pheromoneMatrix = this.initializePheromoneMatrix();
         this.ants = [];
@@ -33,7 +33,11 @@ class MinMaxAntSystem {
             if (tour.length > 0 && tour.length < this.bestTourLength) {
                 // Update the best tour and its length
                 this.bestTour = tour.slice(); // Clone the tour
-                this.bestTourLength = tour.length;
+                let total = 0;
+                tour.forEach(element => {
+                    total += element;
+                });
+                this.bestTourLength = total;
             }
         }
     }
@@ -53,9 +57,13 @@ class MinMaxAntSystem {
         for (let i = 0; i < this.params.numAnts; i++) {
             const ant = new Ant(this.numNodes, this.pheromoneMatrix, this.params);
             const tour = ant.findTour();
-            if (tour.length > 0 && tour.length < this.bestTourLength) {
+            let total = 0; 
+            tour.forEach(element => {
+                total += element;
+            });
+            if (tour.length > 0 && total < this.bestTourLength) {
                 this.bestTour = tour; // Update the best tour if a shorter one is found
-                this.bestTourLength = tour.length;
+                this.bestTourLength = total;
             }
             this.ants.push(ant);
         }
@@ -94,7 +102,7 @@ class Ant {
 
     // This method is used to find the tour (path) for the ant.
     findTour() {
-        while (this.visited.size < this.numNodes) {
+        while (this.visited.size < this.numNodes && this.currentNode !== this.params.endNode) {
             const nextNode = this.selectNextNode();
             if (nextNode === -1) break;
             this.tour.push(nextNode);
@@ -108,7 +116,7 @@ class Ant {
     selectNextNode() {
         const currentNode = this.currentNode;
         const unvisitedNeighbors = Array.from({ length: this.numNodes }, (_, neighbor) => neighbor)
-            .filter(neighbor => !this.visited.has(neighbor))
+            .filter(neighbor => !this.visited.has(neighbor) && this.params.distanceMatrix[currentNode][neighbor] != 0)
             .map(neighbor => ({
                 neighbor,
                 distance: this.params.distanceMatrix[currentNode][neighbor],
